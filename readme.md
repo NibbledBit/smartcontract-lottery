@@ -15,3 +15,9 @@ Ways to resolve this would be:
 - Use a timing/counting algorithm (draw once weekly, draw once a certain value has been reached)
 - DAO could be the admin
 - Chainlink Keepers
+
+### Testing
+
+1. mainnet-fork
+2. development with mocks
+3. testnet

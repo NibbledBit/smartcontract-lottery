@@ -12,7 +12,7 @@ contract Lottery {
     constructor(address ethUsdPriceFeedAddress, address gbpUsdPriceFeedAddress)
         public
     {
-        gbpEntryFee = 5 * (10**18);
+        gbpEntryFee = 5;
         ethUsdPriceFeed = AggregatorV3Interface(ethUsdPriceFeedAddress);
         gbpUsdPriceFeed = AggregatorV3Interface(gbpUsdPriceFeedAddress);
     }
@@ -20,6 +20,16 @@ contract Lottery {
     function enter() public {
         //require();
         players.push(msg.sender);
+    }
+
+    function getGbpUsdPrice() public view returns (uint256) {
+        (, int256 gbpUsdPrice, , , ) = gbpUsdPriceFeed.latestRoundData();
+        return uint256(gbpUsdPrice);
+    }
+
+    function getEthUsdPrice() public view returns (uint256) {
+        (, int256 ethUsdPrice, , , ) = ethUsdPriceFeed.latestRoundData();
+        return uint256(ethUsdPrice);
     }
 
     /// Don't send this to product because the math isn't safe
@@ -30,16 +40,16 @@ contract Lottery {
         (, int256 ethUsdPrice, , , ) = ethUsdPriceFeed.latestRoundData();
 
         // convert to 18 decimals
-        uint256 adjustedEthUsdPrice = uint256(ethUsdPrice) * 10**10;
         uint256 adjustedGbpUsdPrice = uint256(gbpUsdPrice) * 10**10;
+        uint256 adjustedEthUsdPrice = uint256(ethUsdPrice);
         //gbpEntryFee = £5
         // £5 to USD = $6.72
-        uint256 usdEntryFee = (gbpEntryFee * 10**18) * adjustedGbpUsdPrice;
+        uint256 usdEntryFee = (gbpEntryFee) * adjustedGbpUsdPrice;
         // ETH to USD = $4067
         // $6.72 / $4067
-        uint256 costToEnter = usdEntryFree / adjustedEthUsdPrice;
-        //0.001652323580034423 * 10 ** 18
-        return costToEnter;
+        uint256 costToEnter = usdEntryFee / adjustedEthUsdPrice;
+        //0.001652323580034423
+        return costToEnter * 10**8;
     }
 
     function startLotter() public {}
