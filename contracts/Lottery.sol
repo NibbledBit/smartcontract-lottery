@@ -1,25 +1,34 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.6;
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+pragma solidity ^0.8.0;
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Lottery {
+contract Lottery is Ownable {
     address payable[] public players;
     uint256 public gbpEntryFee;
     AggregatorV3Interface internal ethUsdPriceFeed;
     AggregatorV3Interface internal gbpUsdPriceFeed;
 
+    enum LOTTERY_STATE {
+        OPEN,
+        CLOSED,
+        CALCULATING_WINNER
+    }
+    LOTTERY_STATE public lottery_state;
+
     constructor(address ethUsdPriceFeedAddress, address gbpUsdPriceFeedAddress)
-        public
     {
         gbpEntryFee = 5;
         ethUsdPriceFeed = AggregatorV3Interface(ethUsdPriceFeedAddress);
         gbpUsdPriceFeed = AggregatorV3Interface(gbpUsdPriceFeedAddress);
+        lottery_state = LOTTERY_STATE.CLOSED;
     }
 
-    function enter() public {
-        //require();
-        players.push(msg.sender);
+    function enter() public payable {
+        require(lottery_state == LOTTERY_STATE.OPEN, "Lottery is not open!");
+        require(msg.value >= getEntranceFee(), "Not enough ETH!");
+        players.push(payable(msg.sender));
     }
 
     function getGbpUsdPrice() public view returns (uint256) {
@@ -52,7 +61,25 @@ contract Lottery {
         return costToEnter * 10**8;
     }
 
-    function startLotter() public {}
+    function startLottery() public onlyOwner {
+        require(
+            lottery_state == LOTTERY_STATE.CLOSED,
+            "Cannot start a new lottery yet!"
+        );
+        lottery_state = LOTTERY_STATE.OPEN;
+    }
 
-    function endLotter() public {}
+    function endLottery() public onlyOwner {
+        //pseudo random number
+        uint256(
+            keccak256(
+                abi.encodePacked(
+                    nonce,
+                    msg.sender,
+                    block.difficulty,
+                    block.timestamp
+                )
+            )
+        ) % players.length;
+    }
 }
